@@ -1,0 +1,94 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import make_classification
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+X, y = make_classification(
+    n_samples=500,
+    n_features=50,
+    n_informative=10,
+    n_redundant=10,
+    n_classes=3,
+    n_clusters_per_class=1,
+    random_state=42
+)
+print("Dataset Shape:", X.shape)
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.3,
+    random_state=42,
+    stratify=y
+)
+pca = PCA(n_components=2)
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca = pca.transform(X_test)
+print("\nPCA Explained Variance Ratio:")
+print(pca.explained_variance_ratio_)
+print("Total Explained Variance:",
+      np.sum(pca.explained_variance_ratio_))
+lda = LDA(n_components=2)
+X_train_lda = lda.fit_transform(X_train, y_train)
+X_test_lda = lda.transform(X_test)
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+for class_value in np.unique(y_train):
+    plt.scatter(
+        X_train_pca[y_train == class_value, 0],
+        X_train_pca[y_train == class_value, 1],
+        label=f"Class {class_value}"
+    )
+plt.title("PCA Visualization")
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.legend()
+plt.subplot(1, 2, 2)
+for class_value in np.unique(y_train):
+    plt.scatter(
+        X_train_lda[y_train == class_value, 0],
+        X_train_lda[y_train == class_value, 1],
+        label=f"Class {class_value}"
+    )
+plt.title("LDA Visualization")
+plt.xlabel("Linear Discriminant 1")
+plt.ylabel("Linear Discriminant 2")
+plt.legend()
+plt.tight_layout()
+plt.show()
+clf_original = RandomForestClassifier(random_state=42)
+clf_original.fit(X_train, y_train)
+y_pred_original = clf_original.predict(X_test)
+original_accuracy = accuracy_score(
+    y_test,
+    y_pred_original
+)
+clf_pca = RandomForestClassifier(random_state=42)
+clf_pca.fit(X_train_pca, y_train)
+y_pred_pca = clf_pca.predict(X_test_pca)
+pca_accuracy = accuracy_score(
+    y_test,
+    y_pred_pca
+)
+clf_lda = RandomForestClassifier(random_state=42)
+clf_lda.fit(X_train_lda, y_train)
+y_pred_lda = clf_lda.predict(X_test_lda)
+lda_accuracy = accuracy_score(
+    y_test,
+    y_pred_lda
+)
+print("\n========== Accuracy Comparison ==========")
+
+print(f"Accuracy on Original Data : {original_accuracy:.2f}")
+print(f"Accuracy on PCA Data      : {pca_accuracy:.2f}")
+print(f"Accuracy on LDA Data      : {lda_accuracy:.2f}")
+print("\n========== Comparison ==========")
+if lda_accuracy > pca_accuracy:
+    print("LDA performed better than PCA.")
+elif pca_accuracy > lda_accuracy:
+    print("PCA performed better than LDA.")
+else:
+    print("PCA and LDA produced the same accuracy.")
